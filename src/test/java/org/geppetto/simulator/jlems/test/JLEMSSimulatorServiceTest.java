@@ -32,9 +32,8 @@
  *******************************************************************************/
 package org.geppetto.simulator.jlems.test;
 
-import javax.measure.quantity.Quantity;
-import javax.measure.unit.Unit;
-
+import static tec.units.ri.util.SI.METRE;
+import static tec.units.ri.util.SI.SECOND;
 import junit.framework.Assert;
 
 import org.geppetto.core.data.model.SimpleType;
@@ -156,10 +155,10 @@ public class JLEMSSimulatorServiceTest
 	{
 		//mass, length, time, current, temperature, amount, brightness
 		JLEMSSimulatorService sim=new JLEMSSimulatorService();
-		Unit<? extends Quantity> unit=sim.getUnitFromLEMSDimension("0,1,0,0,0,0,0");
-		Assert.assertEquals("m",unit.toString());
-		unit=sim.getUnitFromLEMSDimension("0,0,-3,0,0,0,0");
-		Assert.assertEquals("ms",unit.toString());
+		javax.measure.Unit<?> unit = sim.getUnitFromLEMSDimension("0,1,0,0,0,0,0");
+		Assert.assertEquals(METRE, unit);
+		unit = sim.getUnitFromLEMSDimension("0,0,-3,0,0,0,0");
+		Assert.assertEquals(SECOND.pow(-3), unit);
 		// 1 kg·m2·s-3·A-1
 		//unit=sim.getUnitFromLEMSDimension("3,2,-3,-1,0,0,0");
 		//Assert.assertEquals("V",unit.alternate("V"));

@@ -32,17 +32,22 @@
  *******************************************************************************/
 package org.geppetto.simulator.jlems;
 
-import java.text.DecimalFormat;
-import java.util.Arrays;
+import static tec.units.ri.AbstractUnit.ONE;
+import static tec.units.ri.util.SI.AMPERE;
+import static tec.units.ri.util.SI.CANDELA;
+import static tec.units.ri.util.SI.KELVIN;
+import static tec.units.ri.util.SI.KILOGRAM;
+import static tec.units.ri.util.SI.METRE;
+import static tec.units.ri.util.SI.MOLE;
+import static tec.units.ri.util.SI.SECOND;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 
-import javax.measure.quantity.Quantity;
-import javax.measure.unit.SI;
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -96,10 +101,10 @@ import org.lemsml.jlems.api.interfaces.IStateIdentifier;
 import org.lemsml.jlems.api.interfaces.IStateRecord;
 import org.lemsml.jlems.core.expression.ParseError;
 import org.lemsml.jlems.core.sim.ContentError;
-import org.lemsml.jlems.core.type.Target;
 import org.neuroml.model.NeuroMLDocument;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 
 /**
  * @author matteocantarelli
@@ -112,7 +117,6 @@ public class JLEMSSimulatorService extends ASimulator
 	private static Log _logger = LogFactory.getLog(JLEMSSimulatorService.class);
 	private ILEMSSimulator _simulator = null;
 	private ILEMSRunConfiguration _runConfig;
-	private DecimalFormat _df = new DecimalFormat("0.E0");
 
 	@Autowired
 	private SimulatorConfig jlemsSimulatorConfig;
@@ -460,7 +464,7 @@ public class JLEMSSimulatorService extends ASimulator
 	{
 		try
 		{
-			double d = Integer.parseInt(str);
+			Integer.parseInt(str);
 		}
 		catch(NumberFormatException nfe)
 		{
@@ -473,119 +477,32 @@ public class JLEMSSimulatorService extends ASimulator
 	 * @param dimension
 	 * @return
 	 */
-	public Unit<? extends Quantity> getUnitFromLEMSDimension(String dimension)
-	{
+	public Unit<?> getUnitFromLEMSDimension(String dimension) {
 		// the dimension string is a comma-separated list of dimension powers in
-		// the order
-		// mass, length, time, current, temperature, amount, brightness
+		// the order mass, length, time, current, temperature, amount, brightness
 		StringTokenizer st = new StringTokenizer(dimension, ",");
 
-		Unit<? extends Quantity> resultingUnit = Unit.ONE;
-		float mass = getDecimalNumber(Integer.parseInt(st.nextToken()));
-		if(mass != 0)
-		{
-			resultingUnit = resultingUnit.times(getUnit(mass, SI.GRAM));
-		}
-		float length = getDecimalNumber(Integer.parseInt(st.nextToken()));
-		if(length != 0)
-		{
-			resultingUnit = resultingUnit.times(getUnit(length, SI.METER));
-		}
-		float time = getDecimalNumber(Integer.parseInt(st.nextToken()));
-		if(time != 0)
-		{
-			resultingUnit = resultingUnit.times(getUnit(time, SI.SECOND));
-		}
-		float current = getDecimalNumber(Integer.parseInt(st.nextToken()));
-		if(current != 0)
-		{
-			resultingUnit = resultingUnit.times(getUnit(current, SI.AMPERE));
-		}
-		float temperature = getDecimalNumber(Integer.parseInt(st.nextToken()));
-		if(temperature != 0)
-		{
-			resultingUnit = resultingUnit.times(getUnit(temperature, SI.CELSIUS));
-		}
-		float amount = getDecimalNumber(Integer.parseInt(st.nextToken()));
-		if(amount != 0)
-		{
-			resultingUnit = resultingUnit.times(getUnit(amount, SI.MOLE));
-		}
-		float brightness = getDecimalNumber(Integer.parseInt(st.nextToken()));
-		if(brightness != 0)
-		{
-			resultingUnit = resultingUnit.times(getUnit(brightness, SI.CANDELA));
-		}
+		Unit<?> resultingUnit = ONE;
+		int mass = Integer.parseInt(st.nextToken());
+		int length = Integer.parseInt(st.nextToken());
+		int time = Integer.parseInt(st.nextToken());
+		int current = Integer.parseInt(st.nextToken());
+		int temperature = Integer.parseInt(st.nextToken());
+		int amount = Integer.parseInt(st.nextToken());
+		int brightness = Integer.parseInt(st.nextToken());
+
+		resultingUnit = resultingUnit.multiply(AMPERE.pow(current));
+		resultingUnit = resultingUnit.multiply(CANDELA.pow(brightness));
+		resultingUnit = resultingUnit.multiply(KELVIN.pow(temperature));
+		resultingUnit = resultingUnit.multiply(METRE.pow(length));
+		resultingUnit = resultingUnit.multiply(KILOGRAM.pow(mass));
+		resultingUnit = resultingUnit.multiply(MOLE.pow(amount));
+		resultingUnit = resultingUnit.multiply(SECOND.pow(time));
+
 		return resultingUnit;
 	}
 
-	/**
-	 * @param noZeros
-	 * @param unit
-	 * @return
-	 */
-	private Unit<?> getUnit(Float scaling, Unit<?> unit)
-	{
-		switch(scaling.intValue())
-		{
-			case -12:
-				return SI.PICO(unit);
-			case -9:
-				return SI.NANO(unit);
-			case -6:
-				return SI.MICRO(unit);
-			case -3:
-				return SI.MILLI(unit);
-			case -2:
-				return SI.CENTI(unit);
-			case -1:
-				return SI.DECI(unit);
-			case 12:
-				return SI.TERA(unit);
-			case 6:
-				return SI.MEGA(unit);
-			case 3:
-				return SI.KILO(unit);
-			case 2:
-				return SI.HECTO(unit);
-			case 1:
-				return unit;
-			default:
-				return unit.times(scaling);
-		}
-	}
 
-	/**
-	 * @param noZeros
-	 * @return
-	 */
-	private float getDecimalNumber(int noZeros)
-	{
-		if(noZeros > 0)
-		{
-			char[] zeros = {};
-			if(noZeros > 1)
-			{
-				zeros = new char[noZeros];
-			}
-			Arrays.fill(zeros, '0');
-			return Float.parseFloat("1" + String.valueOf(zeros));
-		}
-		else if(noZeros < 0)
-		{
-			char[] zeros = new char[Math.abs(noZeros + 1)];
-			Arrays.fill(zeros, '0');
-			return Float.parseFloat("0." + String.valueOf(zeros) + "1");
-		}
-		else
-		{
-			return 0f;
-		}
-	}
-
-	/**
-	 * 
-	 */
 	public void setWatchableVariables()
 	{
 
